@@ -1,0 +1,7 @@
+# Secrets et fichiers générés : ne jamais les publier
+.env
+certs/
+authelia/db.sqlite3
+authelia/notification.txt
+__pycache__/
+*.pyc

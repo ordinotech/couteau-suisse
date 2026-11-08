@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Couteau suisse</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d1b18'/%3E%3Cpath d='M9 22l7-12 7 12z' fill='%23f4f1ec'/%3E%3C/svg%3E">
+<style>
+  /* Une palette : papier chaud + encre. Un seul accent (terre cuite), la couleur sert aux données. */
+  :root {
+    --bg: #f4f1ec; --panel: #fbf9f6; --ink: #1d1b18; --muted: #6f6a62; --line: #e1dcd3; --track: #e7e2d9;
+    --accent: #b8470f; --ok: #2f7d4f; --bad: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14120f; --panel: #1b1916; --ink: #efeae2; --muted: #9a948a; --line: #2b2823; --track: #2b2823;
+      --accent: #e2733a; --ok: #5bb381; --bad: #ef6b62;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14120f; --panel: #1b1916; --ink: #efeae2; --muted: #9a948a; --line: #2b2823; --track: #2b2823;
+    --accent: #e2733a; --ok: #5bb381; --bad: #ef6b62;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { color-scheme: light dark; }
+  body {
+    background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased;
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 24px 72px; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; }
+  .mark { width: 22px; height: 22px; border-radius: 6px; background: var(--ink); display: grid; place-items: center; }
+  .mark svg { width: 12px; height: 12px; fill: var(--bg); }
+  .actions { display: flex; gap: 6px; }
+  .btn { border: 1px solid transparent; background: none; color: var(--muted); padding: 7px 12px; border-radius: 8px;
+    font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
+  .btn:hover { color: var(--ink); border-color: var(--line); }
+
+  .intro { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding: 72px 0 40px; }
+  .intro h1 { font: 500 clamp(38px, 6vw, 64px)/1.02 ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.02em; }
+  .intro p { color: var(--muted); margin-top: 14px; max-width: 46ch; font-size: 16px; }
+  .when { text-align: right; font-variant-numeric: tabular-nums; }
+  .when .time { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+  .when .date { color: var(--muted); font-size: 13px; text-transform: capitalize; margin-top: 2px; }
+  .when .ip { margin-top: 10px; font: 12.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
+  .overall { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.up { background: var(--ok); } .dot.down { background: var(--bad); }
+
+  h2.section { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+  .block { margin-top: 44px; }
+
+  /* Serveur : un seul panneau, quatre chiffres alignés */
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .fig { padding: 18px 20px 20px; border-left: 1px solid var(--line); min-width: 0; }
+  .fig:first-child { border-left: 0; }
+  .fig .label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+  .fig .value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin: 8px 0 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fig .value small { font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  .bar { height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--ink); transition: width .6s ease; }
+  .bar i.hot { background: var(--bad); }
+
+  /* Outils */
+  .tools-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tools-head h2 { margin: 0; }
+  .search { position: relative; width: min(100%, 320px); }
+  .search input { width: 100%; padding: 9px 38px 9px 36px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); font: inherit; font-size: 14px; outline: none; }
+  .search input:focus { border-color: var(--accent); }
+  .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; }
+  .search kbd { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font: 11px ui-monospace, Menlo, monospace; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; transition: border-color .15s; min-width: 0; }
+  .card:hover { border-color: var(--ink); }
+  .card a.main { display: block; padding: 22px 22px 18px; text-decoration: none; flex: 1; }
+  .card .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .card .ico { width: 24px; height: 24px; stroke: var(--ink); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .card .tag { font-size: 12px; color: var(--muted); }
+  .card h3 { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+  .card p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .card .go { color: var(--accent); }
+  .meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 22px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .meta .state { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); }
+  .meta a { text-underline-offset: 3px; }
+  .meta a:hover { color: var(--accent); }
+  .addr { font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); padding: 0 22px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { display: none; color: var(--muted); padding: 40px 0; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+  .box h4 { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; min-height: 30px; }
+  .links { display: flex; flex-direction: column; }
+  .link { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line);
+    text-decoration: none; font-size: 14px; }
+  .link:first-child { border-top: 0; }
+  .link:hover b { color: var(--accent); }
+  .link span { color: var(--muted); font: 12px ui-monospace, Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: auto; max-width: 50%; }
+  .link button { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 13px; padding: 2px 4px; }
+  .link button:hover { color: var(--bad); }
+  .mini { padding: 4px 10px; font-size: 13px; border-color: var(--line); color: var(--ink); }
+  textarea { width: 100%; min-height: 150px; resize: vertical; border: 1px solid var(--line); border-radius: 8px;
+    background: transparent; color: var(--ink); font: inherit; font-size: 14px; padding: 10px 12px; outline: none; }
+  textarea:focus { border-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .figures { grid-template-columns: repeat(2, 1fr); }
+    .fig:nth-child(3) { border-left: 0; }
+    .fig:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 20px 20px 56px; }
+    .intro { grid-template-columns: 1fr; padding: 44px 0 32px; }
+    .when { text-align: left; }
+    .grid, .two { grid-template-columns: 1fr; }
+    .tools-head { align-items: stretch; flex-direction: column; }
+    .search { width: 100%; }
+    .link span { max-width: 40%; }
+    #s-load-sub { display: none; }
+    .fig { padding: 16px 16px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M5 19 12 5l7 14z"/></svg></span>Couteau suisse</div>
+    <div class="actions">
+      <button class="btn" id="theme" title="Changer de thème">Thème</button>
+      <a class="btn" href="https://auth.alltools.lan/logout">Déconnexion</a>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div>
+      <h1><span id="hello">Bonjour</span>.<br>Que veux-tu faire&nbsp;?</h1>
+      <p>Tes outils auto-hébergés, au même endroit.</p>
+    </div>
+    <div class="when">
+      <div class="time" id="time">--:--</div>
+      <div class="date" id="date"></div>
+      <div class="overall" id="chip-global"><span class="dot"></span>Statut en attente</div>
+      <div class="ip" id="chip-ip"></div>
+    </div>
+  </section>
+
+  <section class="block" style="margin-top:0">
+    <h2 class="section">Serveur cs01</h2>
+    <div class="figures">
+      <div class="fig"><div class="label"><span>Processeur</span><span id="s-cpu-sub"></span></div>
+        <div class="value" id="s-cpu-v">–</div><div class="bar"><i id="s-cpu-b"></i></div></div>
+      <div class="fig"><div class="label"><span>Mémoire</span><span id="s-mem-sub"></span></div>
+        <div class="value" id="s-mem-v">–</div><div class="bar"><i id="s-mem-b"></i></div></div>
+      <div class="fig"><div class="label"><span>Disque</span><span id="s-disk-sub"></span></div>
+        <div class="value" id="s-disk-v">–</div><div class="bar"><i id="s-disk-b"></i></div></div>
+      <div class="fig"><div class="label"><span>Disponibilité</span><span id="s-load-sub"></span></div>
+        <div class="value" id="s-up-v">–</div><div class="bar"><i id="s-up-b" style="width:100%"></i></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="tools-head">
+      <h2 class="section">Outils</h2>
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Rechercher un outil" autocomplete="off" aria-label="Rechercher un outil">
+        <kbd>/</kbd>
+      </label>
+    </div>
+    <main class="grid" id="grid"></main>
+    <div class="empty" id="empty">Aucun outil ne correspond à ta recherche.</div>
+  </section>
+
+  <section class="block">
+    <div class="two">
+      <div class="box">
+        <h4>Raccourcis <button class="btn mini" id="add-link">Ajouter</button></h4>
+        <div class="links" id="links"></div>
+        <p class="hint">Enregistrés dans ce navigateur uniquement.</p>
+      </div>
+      <div class="box">
+        <h4>Bloc-notes</h4>
+        <textarea id="notes" placeholder="Notes, idées, choses à ne pas oublier" aria-label="Bloc-notes"></textarea>
+        <p class="hint" id="notes-hint">Enregistré automatiquement dans ce navigateur uniquement.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer><span>Connecté via Authelia · <span id="count"></span> outils</span><span id="updated">Statut en attente</span></footer>
+</div>
+
+<script>
+// ===== À MODIFIER =====
+const SERVER_IP = "192.168.1.143";
+// key = clé du statut renvoyé par le service "status". Ajouter un outil = une entrée ici (+ un service dans le compose).
+const TOOLS = [
+  { key: "pdf", name: "Outils PDF", desc: "Fusionner, découper, compresser, signer, OCR. Propulsé par Stirling-PDF.",
+    url: "https://pdf.alltools.lan", tag: "Documents", docs: "https://docs.stirlingpdf.com",
+    icon: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>' },
+  { key: "tools", name: "Boîte à outils", desc: "Convertisseurs, encodages, hash, générateurs. Propulsé par IT-Tools.",
+    url: "https://tools.alltools.lan", tag: "Utilitaires", docs: "https://github.com/CorentinTh/it-tools",
+    icon: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>' },
+  { key: "drop", name: "Envoi local", desc: "Envoyer des fichiers entre les appareils du réseau. Propulsé par PairDrop.",
+    url: "https://drop.alltools.lan", tag: "Partage", docs: "https://github.com/schlagmichdoch/PairDrop",
+    icon: '<path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>' },
+  { key: "files", name: "Mes fichiers", desc: "Parcourir les fichiers de tes machines en SMB, SFTP ou FTP. Propulsé par Filestash.",
+    url: "https://files.alltools.lan", tag: "Stockage", docs: "https://www.filestash.app/docs/",
+    icon: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
+  { key: "budget", name: "Budget", desc: "Suivi de budget personnel, rapide et synchronisé. Propulsé par Actual.",
+    url: "https://budget.alltools.lan", tag: "Finances", docs: "https://actualbudget.org/docs/",
+    icon: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>' },
+];
+const DEFAULT_LINKS = [{ name: "Routeur", url: "http://192.168.1.1" }];
+// ======================
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+let status = {};
+
+function render(list) {
+  $("grid").innerHTML = list.map(t => {
+    const s = status[t.key];
+    const cls = s ? (s.up ? "up" : "down") : "";
+    const txt = s ? (s.up ? `En ligne · ${s.ms} ms` : "Hors ligne") : "Statut inconnu";
+    return `
+    <div class="card">
+      <a class="main" href="${t.url}">
+        <div class="top"><svg class="ico" viewBox="0 0 24 24">${t.icon}</svg><span class="tag">${esc(t.tag)}</span></div>
+        <h3>${esc(t.name)} <span class="go" aria-hidden="true">→</span></h3>
+        <p>${esc(t.desc)}</p>
+      </a>
+      <div class="addr">${esc(t.url.replace("https://", ""))}</div>
+      <div class="meta">
+        <span class="state"><span class="dot ${cls}"></span>${txt}</span>
+        <a href="${t.docs}" target="_blank" rel="noopener">Documentation</a>
+      </div>
+    </div>`;
+  }).join("");
+  $("empty").style.display = list.length ? "none" : "block";
+}
+function filtered() {
+  const s = $("q").value.trim().toLowerCase();
+  return TOOLS.filter(t => (t.name + t.desc + t.tag).toLowerCase().includes(s));
+}
+$("q").addEventListener("input", () => render(filtered()));
+$("q").addEventListener("keydown", e => {
+  if (e.key === "Enter") { const a = $("grid").querySelector("a.main"); if (a) location.href = a.href; }
+});
+addEventListener("keydown", e => {
+  if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("q").focus(); }
+});
+$("count").textContent = TOOLS.length;
+
+const gb = b => (b / 1073741824).toFixed(1);
+const pct = (u, t) => t ? Math.round(100 * u / t) : 0;
+function gauge(id, p) { const b = $(id + "-b"); b.style.width = Math.min(p, 100) + "%"; b.classList.toggle("hot", p >= 90); }
+function fmtUp(sec) {
+  const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+  return d ? `${d} j ${h} h` : h ? `${h} h ${m} min` : `${m} min`;
+}
+function applyStatus(data) {
+  status = data.services || {};
+  const sys = data.system || {};
+  if (sys.mem) {
+    $("s-cpu-v").innerHTML = `${sys.cpu}<small> %</small>`;
+    $("s-cpu-sub").textContent = `${sys.cores} cœurs`;
+    gauge("s-cpu", sys.cpu);
+    const mp = pct(sys.mem.used, sys.mem.total);
+    $("s-mem-v").innerHTML = `${gb(sys.mem.used)}<small> / ${gb(sys.mem.total)} Go</small>`;
+    $("s-mem-sub").textContent = mp + " %";
+    gauge("s-mem", mp);
+    const dp = pct(sys.disk.used, sys.disk.total);
+    $("s-disk-v").innerHTML = `${gb(sys.disk.used)}<small> / ${gb(sys.disk.total)} Go</small>`;
+    $("s-disk-sub").textContent = dp + " %";
+    gauge("s-disk", dp);
+    $("s-up-v").textContent = fmtUp(sys.uptime);
+    $("s-load-sub").textContent = "charge " + sys.load.map(x => x.toFixed(2)).join(" ");
+  }
+  const keys = Object.keys(status), up = keys.filter(k => status[k].up).length;
+  $("chip-global").innerHTML = keys.length
+    ? `<span class="dot ${up === keys.length ? "up" : "down"}"></span>${up} sur ${keys.length} services en ligne`
+    : '<span class="dot"></span>Statut indisponible';
+  $("updated").textContent = data.updated ? "Mis à jour à " + new Date(data.updated * 1000).toLocaleTimeString("fr-CA") : "Statut indisponible";
+  render(filtered());
+}
+async function poll() {
+  try {
+    const r = await fetch("/api/status", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    applyStatus(await r.json());
+  } catch (e) {
+    $("updated").textContent = "Statut indisponible";
+    $("chip-global").innerHTML = '<span class="dot"></span>Statut indisponible';
+  }
+}
+render(TOOLS);
+poll();
+setInterval(poll, 5000);
+
+function tick() {
+  const n = new Date();
+  $("time").textContent = n.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  $("date").textContent = n.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const h = n.getHours();
+  $("hello").textContent = h < 5 || h >= 18 ? "Bonsoir" : "Bonjour";
+}
+tick(); setInterval(tick, 10000);
+$("chip-ip").textContent = SERVER_IP;
+
+let links;
+try { links = JSON.parse(store.get("links", "null")); } catch (e) { links = null; }
+if (!Array.isArray(links)) links = DEFAULT_LINKS.slice();
+function renderLinks() {
+  $("links").innerHTML = links.length ? links.map((l, i) => `
+    <a class="link" href="${esc(l.url)}" target="_blank" rel="noopener">
+      <b style="font-weight:550">${esc(l.name)}</b><span>${esc(l.url.replace(/^https?:\/\//, ""))}</span>
+      <button data-i="${i}" aria-label="Supprimer ${esc(l.name)}">Retirer</button>
+    </a>`).join("") : '<p class="hint" style="margin:0">Aucun raccourci pour l\'instant.</p>';
+}
+$("links").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  e.preventDefault();
+  links.splice(+b.dataset.i, 1);
+  store.set("links", JSON.stringify(links)); renderLinks();
+});
+$("add-link").onclick = () => {
+  const name = prompt("Nom du raccourci (ex. Proxmox) :");
+  if (!name) return;
+  let url = prompt("Adresse (ex. https://192.168.1.50:8006) :");
+  if (!url) return;
+  if (!/^https?:\/\//.test(url)) url = "http://" + url;
+  links.push({ name: name.trim(), url: url.trim() });
+  store.set("links", JSON.stringify(links)); renderLinks();
+};
+renderLinks();
+
+$("notes").value = store.get("notes", "");
+let nt;
+$("notes").addEventListener("input", () => {
+  clearTimeout(nt);
+  nt = setTimeout(() => { store.set("notes", $("notes").value); $("notes-hint").textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-CA") + " dans ce navigateur."; }, 400);
+});
+
+const root = document.documentElement;
+{ const t = store.get("theme", ""); if (t) root.dataset.theme = t; }
+$("theme").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  store.set("theme", root.dataset.theme);
+};
+</script>
+</body>
+</html>

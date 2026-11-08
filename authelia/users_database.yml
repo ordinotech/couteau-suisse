@@ -1,0 +1,7 @@
+users:
+  admin:
+    displayname: "Admin"
+    # Remplace par ton hash (voir le README, étape "Mot de passe Authelia")
+    password: "$argon2id$REMPLACE_MOI"
+    email: admin@alltools.lan
+    groups: [admins]

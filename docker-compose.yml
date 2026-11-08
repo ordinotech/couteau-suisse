@@ -1,0 +1,87 @@
+name: couteau-suisse
+
+networks:
+  lab:
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./portal:/usr/share/nginx/portal:ro
+    depends_on: [authelia]
+    networks: [lab]
+
+  authelia:
+    image: authelia/authelia:4.38
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./authelia:/config
+    networks: [lab]
+    mem_limit: 128m
+
+  status:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: python /app/status.py
+    volumes:
+      - ./status:/app:ro
+    networks: [lab]
+    mem_limit: 64m
+
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    restart: unless-stopped
+    environment:
+      DOCKER_ENABLE_SECURITY: "false"
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    volumes:
+      - stirling-data:/usr/share/tessdata
+    networks: [lab]
+    mem_limit: 1536m
+
+  it-tools:
+    image: corentinth/it-tools:latest
+    restart: unless-stopped
+    networks: [lab]
+    mem_limit: 64m
+
+  pairdrop:
+    image: lscr.io/linuxserver/pairdrop:latest
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/Montreal"
+    networks: [lab]
+    mem_limit: 256m
+
+  filestash:
+    image: machines/filestash:latest
+    restart: unless-stopped
+    environment:
+      APPLICATION_URL: "files.alltools.lan"
+    volumes:
+      - filestash-data:/app/data/state
+    networks: [lab]
+    mem_limit: 384m
+
+  actual:
+    image: actualbudget/actual-server:latest
+    restart: unless-stopped
+    volumes:
+      - actual-data:/data
+    networks: [lab]
+    mem_limit: 384m
+
+volumes:
+  stirling-data:
+  filestash-data:
+  actual-data:
